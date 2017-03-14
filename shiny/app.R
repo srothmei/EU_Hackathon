@@ -3,12 +3,21 @@ library(shiny)
 #library(shinydashboard)
 library(leaflet)
 library(tidyverse)
+library(RColorBrewer)
 
 ## <- <- <- Add helper scripts
 source("functions.R")
 
 ## <- <- <- Ye olde Parameter-Bay
 dataDir <- "data/"
+
+panelStyle <- "border: 3px solid black; 
+                padding:10px;     
+                border-radius: 25px;
+                background: #FFF;
+                -webkit-box-shadow: 3px 3px 5px 6px #ccc;
+                -moz-box-shadow:    3px 3px 5px 6px #ccc;
+                box-shadow:         3px 3px 5px 6px #ccc;"
 
 pParam <- data.frame(
   dashArray = "6", 
@@ -35,17 +44,37 @@ map_data_gbr <- geojsonio::geojson_read(paste0(dataDir,"GBR.geojson"), what="sp"
 ## <- <- <- TEST AREA
 #test <- geojsonio::geojson_read("data/custom.geo.json", what="sp")
 
+## <- <- <- <- <- t' startin' parameters ########################
+regions <- tibble(
+    #labels = sort(as.vector(get_regionNames(jobs_per_region_suggestions))),
+    labels = c("ČESKÁ REPUBLIKA", "DEUTSCHLAND", "IRELAND", "ITALIA", "UNITED KINGDOM" ),
+    colors = brewer.pal(5, "Spectral"),
+    #flag_files = c(),
+    map_files = c("CZE.geojson", "DEU.geojson", "IRL.geojson", "ITA.geojson", "GBR.geojson")
+)
+
+
 ## <- <- <- Define UI <- <- <- <- <- <- <- 
 ui <- bootstrapPage(
   tags$style(type = "text/css", "html, body {width:100%;height:100%}"),
   
+  # The Background Map in aRRRRRRR
   leafletOutput("skillMap", width = "100%", height = "100%"),
   
+  # Define th' country selector
   absolutePanel(
-    style = "border: 3px solid black; 
-              padding:10px;     
-              border-radius: 25px;
-              background: #FFF;", 
+    style = panelStyle,
+    bottom = 10, left = 10, width = "50%", draggable = FALSE,
+    radioButtons("selectCountry", 
+                 "Select your Region for analysis", 
+                 regionLabels,
+                 inline = TRUE
+                 )
+  ),
+  
+  # Ye olde plot panel
+  absolutePanel(
+    style = panelStyle, 
     top = 10, right = 10, width = "30%", draggable = FALSE,
     plotOutput("top5"),
     p(),
