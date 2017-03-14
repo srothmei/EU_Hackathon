@@ -2,7 +2,7 @@ library(dplyr)
 
 
 #Function to select the number of missing workers for a specifiy job_cat for each of the regions
-get_numMissing_perCountry <- function(occup_name) {
+get_numMissing_perCountry <- function(data, occup_name) {
   #occup_name = "Potters and related workers"
   result <- filter(data, DES_OCCUP_L3_NAME == occup_name) %>%
             select(region, DES_OCCUP_L3_NAME, numMissing) %>%
@@ -11,7 +11,7 @@ get_numMissing_perCountry <- function(occup_name) {
 }
 
 # Function to get the Top5 Missing Job-Categorys for a specific region
-get_top_perOccup <- function(regionName, n = 5) {
+get_top_perOccup <- function(data, regionName, n = 5) {
   #regionName <- "ČESKÁ REPUBLIKA"
   result <- select(data, region, DES_OCCUP_L3_NAME, numMissing) %>%
           filter(region == regionName) %>%
@@ -21,8 +21,8 @@ get_top_perOccup <- function(regionName, n = 5) {
 }
 
 # Function to get the numer of missing workers for a specific region & specific occup
-get_numMissing_occup_country <- function(occup_name, regionName) {
-  result <- get_numMissing_perCountry(occup_name) %>%
+get_numMissing_occup_country <- function(data, occup_name, regionName) {
+  result <- get_numMissing_perCountry(data, occup_name) %>%
             filter(region == regionName)
   return(result)
 }

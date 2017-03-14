@@ -4,6 +4,7 @@ library(shiny)
 library(leaflet)
 library(tidyverse)
 library(RColorBrewer)
+library(stringr)
 
 ## <- <- <- Add helper scripts
 source("functions.R")
@@ -35,11 +36,11 @@ labelOptions <- labelOptions(
 # Data of Interest
 load(paste0(dataDir,"jobs_per_region_suggestions.RData"))
 # Map Data
-map_data_deu <- geojsonio::geojson_read(paste0(dataDir,"DEU.geojson"), what="sp")
-map_data_ita <- geojsonio::geojson_read(paste0(dataDir,"ITA.geojson"), what="sp")
-map_data_irl <- geojsonio::geojson_read(paste0(dataDir,"IRL.geojson"), what="sp")
-map_data_cze <- geojsonio::geojson_read(paste0(dataDir,"CZE.geojson"), what="sp")
-map_data_gbr <- geojsonio::geojson_read(paste0(dataDir,"GBR.geojson"), what="sp")
+#map_data_deu <- geojsonio::geojson_read(paste0(dataDir,"DEU.geojson"), what="sp")
+#map_data_ita <- geojsonio::geojson_read(paste0(dataDir,"ITA.geojson"), what="sp")
+#map_data_irl <- geojsonio::geojson_read(paste0(dataDir,"IRL.geojson"), what="sp")
+#map_data_cze <- geojsonio::geojson_read(paste0(dataDir,"CZE.geojson"), what="sp")
+#map_data_gbr <- geojsonio::geojson_read(paste0(dataDir,"GBR.geojson"), what="sp")
 
 ## <- <- <- TEST AREA
 #test <- geojsonio::geojson_read("data/custom.geo.json", what="sp")
@@ -48,7 +49,7 @@ map_data_gbr <- geojsonio::geojson_read(paste0(dataDir,"GBR.geojson"), what="sp"
 regions <- tibble(
     #labels = sort(as.vector(get_regionNames(jobs_per_region_suggestions))),
     labels = c("ČESKÁ REPUBLIKA", "DEUTSCHLAND", "IRELAND", "ITALIA", "UNITED KINGDOM" ),
-    colors = brewer.pal(5, "Spectral"),
+    colors = brewer.pal(5, "BrBG"),
     #flag_files = c(),
     map_files = c("CZE.geojson", "DEU.geojson", "IRL.geojson", "ITA.geojson", "GBR.geojson")
 )
@@ -61,13 +62,19 @@ ui <- bootstrapPage(
   # The Background Map in aRRRRRRR
   leafletOutput("skillMap", width = "100%", height = "100%"),
   
+  ### DEBUGGING AREA ######
+  absolutePanel(
+    style= panelStyle, top = 50, left = 50, draggable = TRUE, width = "20%",
+    textOutput("debugText")
+  ),
+  
   # Define th' country selector
   absolutePanel(
     style = panelStyle,
     bottom = 10, left = 10, width = "50%", draggable = FALSE,
     radioButtons("selectCountry", 
                  "Select your Region for analysis", 
-                 regionLabels,
+                 regions$labels,
                  inline = TRUE
                  )
   ),
@@ -75,7 +82,7 @@ ui <- bootstrapPage(
   # Ye olde plot panel
   absolutePanel(
     style = panelStyle, 
-    top = 10, right = 10, width = "30%", draggable = FALSE,
+    top = 10, right = 10, width = "40%", draggable = FALSE,
     plotOutput("top5"),
     p(),
     selectInput("6thbar", "Additional Field", unique(jobs_per_region_suggestions$DES_OCCUP_L3_NAME))
@@ -83,24 +90,48 @@ ui <- bootstrapPage(
 )
 
 ## <- <- <- Define Server <- <- <- <- <- 
-server <- function(input, output) {
-
+server <- function(input, output, session) {
   
   output$skillMap <- renderLeaflet({
     leaflet() %>%
       setView(lng= 55, lat = 49.480617, zoom = 4) %>%
       addProviderTiles(providers$CartoDB.Positron) %>%
-      #addPolygons(data = map_data)
-      addPolygons(data=map_data_deu, label = "Germany", fillColor = "yellow",labelOptions = labelOptions, dashArray= pParam$dashArray, smoothFactor = pParam$smoothFactor, color=pParam$color, opacity = pParam$opacity, fillOpacity = pParam$fillOpacity) %>%
-      addPolygons(data=map_data_cze, fillColor = "blue", dashArray= pParam$dashArray, smoothFactor = pParam$smoothFactor, color=pParam$color, opacity = pParam$opacity, fillOpacity = pParam$fillOpacity) %>%
-      addPolygons(data=map_data_gbr, fillColor = "green", dashArray= pParam$dashArray, smoothFactor = pParam$smoothFactor, color=pParam$color, opacity = pParam$opacity, fillOpacity = pParam$fillOpacity) %>%
-      addPolygons(data=map_data_irl, fillColor = "red", dashArray= pParam$dashArray, smoothFactor = pParam$smoothFactor, color=pParam$color, opacity = pParam$opacity, fillOpacity = pParam$fillOpacity) %>%
-      addPolygons(data=map_data_ita, fillColor = "purple", dashArray= pParam$dashArray, smoothFactor = pParam$smoothFactor, color=pParam$color, opacity = pParam$opacity, fillOpacity = pParam$fillOpacity)
+      addPolygons(data=geojsonio::geojson_read(paste0(dataDir,regions$map_files[1]), what="sp"), group = regions$labels[1], label = regions$labels[1], fillColor = regions$colors[1],labelOptions = labelOptions, dashArray= pParam$dashArray, smoothFactor = pParam$smoothFactor, color=pParam$color, opacity = pParam$opacity, fillOpacity = pParam$fillOpacity) %>%
+      addPolygons(data=geojsonio::geojson_read(paste0(dataDir,regions$map_files[2]), what="sp"), group = regions$labels[2], label = regions$labels[2], fillColor = regions$colors[2],labelOptions = labelOptions, dashArray= pParam$dashArray, smoothFactor = pParam$smoothFactor, color=pParam$color, opacity = pParam$opacity, fillOpacity = pParam$fillOpacity) %>%
+      addPolygons(data=geojsonio::geojson_read(paste0(dataDir,regions$map_files[3]), what="sp"), group = regions$labels[3], label = regions$labels[3], fillColor = regions$colors[3],labelOptions = labelOptions, dashArray= pParam$dashArray, smoothFactor = pParam$smoothFactor, color=pParam$color, opacity = pParam$opacity, fillOpacity = pParam$fillOpacity) %>%
+      addPolygons(data=geojsonio::geojson_read(paste0(dataDir,regions$map_files[4]), what="sp"), group = regions$labels[4], label = regions$labels[4], fillColor = regions$colors[4],labelOptions = labelOptions, dashArray= pParam$dashArray, smoothFactor = pParam$smoothFactor, color=pParam$color, opacity = pParam$opacity, fillOpacity = pParam$fillOpacity) %>%
+      addPolygons(data=geojsonio::geojson_read(paste0(dataDir,regions$map_files[5]), what="sp"), group = regions$labels[5], label = regions$labels[5], fillColor = regions$colors[5],labelOptions = labelOptions, dashArray= pParam$dashArray, smoothFactor = pParam$smoothFactor, color=pParam$color, opacity = pParam$opacity, fillOpacity = pParam$fillOpacity)
   })
   
   output$top5 <- renderPlot({
-    ggplot(data = mpg, aes(class)) + 
-      geom_bar()
+    #Check for default val
+    #if(!is.null(input$skillMap_shape_click[[3]])) {
+      data <- get_top_perOccup(data = jobs_per_region_suggestions, regionName = input$selectCountry, n = 5)
+      
+      ggplot(data = data, aes(x = DES_OCCUP_L3_NAME, y = numMissing)) +
+        geom_bar(stat = "identity", aes(fill = DES_OCCUP_L3_NAME)) +
+        coord_flip() +
+        ylab(NULL) + xlab(NULL) +
+        scale_fill_brewer(palette = "YlGnBu", guide=FALSE) +
+        scale_x_discrete(labels = function(x) str_wrap(x, width = 10)) +
+        theme_minimal()
+    #}
+  })
+  
+  output$debugText <- renderText({
+    #print(paste("Radio Button:",input$selectCountry," ### ", input$skillMap_shape_click))
+    #typeof(input$skillMap_shape_click[[3]])
+    if(is.null(input$skillMap_shape_click[[3]])) {
+      print("nein")
+    } else {
+      paste(get_top_perOccup(data = jobs_per_region_suggestions, regionName = input$skillMap_shape_click[[3]], n = 5))
+    }
+  })
+  
+  ## RADIO Button Control
+  observe({
+    x <- input$skillMap_shape_click[[3]]
+    updateRadioButtons(session, "selectCountry", selected = x)
   })
   
 }
