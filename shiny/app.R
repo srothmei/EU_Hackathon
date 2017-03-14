@@ -97,13 +97,16 @@ ui <- bootstrapPage(
     style = panelStyle, 
     top = 10, right = 10, width = "40%", draggable = FALSE,
     plotOutput("top5"),
+    div(
+      strong("Additional Field:"),
+      checkboxInput("addCol",NULL, width = 30)
+    ),
+    selectInput("sixthbar", NULL, c("",unique(jobs_per_region_suggestions$DES_OCCUP_L3_NAME)), selected = NULL),
+    #   flowLayout(
+    #     actionButton("addBar","Add"),
+    #     actionButton("delBar","Remove"))
     p(),
-    verticalLayout(
-      selectInput("6thbar", "Additional Field", unique(jobs_per_region_suggestions$DES_OCCUP_L3_NAME)),
-      flowLayout(
-        actionButton("addBar","Add"),
-        actionButton("delBar","Remove"))
-    )
+    plotOutput("top6")
   )
 )
 
@@ -126,9 +129,21 @@ server <- function(input, output, session) {
       addPolygons(data=geojsonio::geojson_read(paste0(dataDir,regions$map_files[5]), what="sp"), group = regions$labels[5], label = regions$labels[5], fillColor = regions$colors[5],labelOptions = labelOptions, dashArray= pParam$dashArray, smoothFactor = pParam$smoothFactor, color=pParam$color, opacity = pParam$opacity, fillOpacity = pParam$fillOpacity, highlight = highlights)
   })
   
+  ## Reactive Additional value
+  sixthBar_reac <- reactive({
+    input$sixthbar
+  })
+  
   ## REACTIVE Plot
-  data <- reactive({
+  data_interm <- reactive({
     get_top_perOccup(data = jobs_per_region_suggestions, regionName = input$selectCountry, n = 5)
+  })
+  
+  data <- reactive({
+    if(input$addCol) {
+      return(add_occup(jobs_per_region_suggestions, data_interm(), sixthBar_reac(), input$selectCountry))
+    }
+    data_interm()
   })
 
   output$top5 <- renderPlot({
@@ -136,24 +151,58 @@ server <- function(input, output, session) {
     #if(!is.null(input$skillMap_shape_click[[3]])) {
       #data <- get_top_perOccup(data = jobs_per_region_suggestions, regionName = input$selectCountry, n = 5)
       
-      ggplot(data = data(), aes(x = DES_OCCUP_L3_NAME, y = numMissing)) +
-        geom_bar(stat = "identity", aes(fill = DES_OCCUP_L3_NAME)) +
-        coord_flip() +
-        ylab(NULL) + xlab(NULL) +
-        scale_fill_brewer(palette = "YlGnBu", guide=FALSE) +
-        scale_x_discrete(labels = function(x) str_wrap(x, width = 10)) +
-        theme_minimal()
+     # ggplot(data = data(), aes(x = DES_OCCUP_L3_NAME, y = numMissing)) +
+      #  geom_bar(stat = "identity", aes(fill = DES_OCCUP_L3_NAME)) +
+      #  coord_flip() +
+      #  ylab(NULL) + xlab(NULL) +
+      #  scale_fill_brewer(palette = "YlGnBu", guide=FALSE) +
+      #  scale_x_discrete(labels = function(x) str_wrap(x, width = 10)) +
+      #  theme_minimal()
+    
+    ggplot(data = data(), aes(x = DES_OCCUP_L3_NAME, y = numMissing, width=0.95)) +
+      geom_bar(stat = "identity", aes(fill = DES_OCCUP_L3_NAME), width = 0.1) +
+      coord_flip() +
+      ylab("Worker Supply Gap") + xlab(NULL) +
+      scale_fill_brewer(palette = "YlGnBu", guide=FALSE) +
+      scale_x_discrete(labels = function(x) str_wrap(x, width = 40)) +
+      theme_minimal(base_size = 18)
+    
     #}
+  })
+  
+  data_6 <- reactive({
+    get_perOccup_ctry(data = jobs_per_region_suggestions, 
+                      regionName = input$selectCountry, 
+                      occup = sixthBar_reac())
+  })
+  
+  output$top6 <- renderPlot({
+    if(sixthBar_reac() != "") {
+    #data <- get_perOccup_ctry(data = jobs_per_region_suggestions, regionName = "DEUTSCHLAND", occup = "Contact centre information clerks")
+    data <- data_6()
+    
+    ggplot(data, aes(name_alternative)) +
+      geom_bar(data = subset(data, count.up == "positive"), aes(y = numMissing_alternative, fill = name_alternative), stat = "identity", position = "dodge") +
+      geom_bar(data = subset(data, count.up == "negative"), aes(y = numMissing_alternative, fill = name_alternative), stat = "identity", position = "dodge") +
+      geom_hline(yintercept = 0,colour = "grey90") +
+      coord_flip() +
+      ylab("Worker Supply Gap") + xlab(NULL) +
+      scale_fill_brewer(palette = "YlGnBu", guide=FALSE) +
+      scale_x_discrete(labels = function(x) str_wrap(x, width = 40)) +
+      theme_minimal(base_size = 18)
+
+    }
   })
   
   output$debugText <- renderText({
     #print(paste("Radio Button:",input$selectCountry," ### ", input$skillMap_shape_click))
     #typeof(input$skillMap_shape_click[[3]])
-    if(is.null(input$skillMap_shape_click[[3]])) {
-      print("nein")
-    } else {
-      paste(get_top_perOccup(data = jobs_per_region_suggestions, regionName = input$skillMap_shape_click[[3]], n = 5))
-    }
+    # if(is.null(input$skillMap_shape_click[[3]])) {
+    #   print("nein")
+    # } else {
+    #   paste(get_top_perOccup(data = jobs_per_region_suggestions, regionName = input$skillMap_shape_click[[3]], n = 5))
+    # }
+    paste(sixthBar_reac())
   })
   
   ## RADIO Button Control
@@ -162,12 +211,25 @@ server <- function(input, output, session) {
     updateRadioButtons(session, "selectCountry", selected = x)
   })
   
-  ## Add-Button
-  observeEvent(input$addBar, {
-    
-  })
+  ## Add-Box
+  # observeEvent(input$addCol,{
+  #   if(input$addCol) {
+  #     text <- sixthBar_reac()
+  #   } else {
+  #     text <- "nein"
+  #   }
+  #   output$debugText <- renderText({print(text)})
+  # })
   
-}
+  # observeEvent(input$addBar, {
+  #   #data <- add_occup(data = jobs_per_region_suggestions, occup_name = input$sixthbar, regionName = input$selectCountry)
+  #   #output$debugText <- renderText({print(input$sixthbar)})
+  # })
+  # ## Remove-Button
+  # observeEvent(input$delBar, {
+  # 
+  # })
+ }
 
 ## <- <- <- <- Render App
 shinyApp(ui, server)

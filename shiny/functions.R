@@ -34,7 +34,7 @@ get_regionNames <- function(data) {
 }
 
 # Function to enhance a top5-dataset with an additional occup group
-add_occup <- function(data, top5_set, occup_name) {
+add_occup <- function(data, top5_set, occup_name, regionName) {
   add_occup <- get_numMissing_occup_country(data, occup_name, regionName)
   result <- dplyr::union(add_occup,top5_set)  
   
@@ -42,7 +42,16 @@ add_occup <- function(data, top5_set, occup_name) {
 }
 
 
-
+# Function to get the Top5 Missing Job-Categorys for a specific region
+get_perOccup_ctry <- function(data, regionName, occup) {
+  #regionName <- "ČESKÁ REPUBLIKA"
+  result <- select(data, region, DES_OCCUP_L3_NAME, numMissing, count.up, numMissing_alternative, name_alternative) %>%
+    filter(region == regionName) %>%
+    filter(DES_OCCUP_L3_NAME == occup) %>%
+    filter(name_alternative != DES_OCCUP_L3_NAME) %>%
+    distinct()
+  return(result)
+}
 
 
 
