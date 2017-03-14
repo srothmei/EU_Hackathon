@@ -27,10 +27,21 @@ get_numMissing_occup_country <- function(data, occup_name, regionName) {
   return(result)
 }
 
+# Create a list of all Region Names in the data
 get_regionNames <- function(data) {
   result <- unique(data$region)
   return(result)
 }
+
+# Function to enhance a top5-dataset with an additional occup group
+add_occup <- function(data, top5_set, occup_name) {
+  add_occup <- get_numMissing_occup_country(data, occup_name, regionName)
+  result <- dplyr::union(add_occup,top5_set)  
+  
+  return(result)
+}
+
+
 
 
 
