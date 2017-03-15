@@ -18,7 +18,8 @@ panelStyle <- "border: 3px solid black;
                 background: #FFF;
                 -webkit-box-shadow: 3px 3px 5px 6px #ccc;
                 -moz-box-shadow:    3px 3px 5px 6px #ccc;
-                box-shadow:         3px 3px 5px 6px #ccc;"
+                box-shadow:         3px 3px 5px 6px #ccc;
+                max-height:90%;"
 
 pParam <- data.frame(
   dashArray = "6", 
@@ -64,16 +65,16 @@ regions <- tibble(
 
 ## <- <- <- Define UI <- <- <- <- <- <- <- 
 ui <- bootstrapPage(
-  tags$style(type = "text/css", "html, body {width:100%;height:100%}"),
+  tags$style(type = "text/css", "html, body {width:100%;height:100%;position:relative;}"),
   
   # The Background Map in aRRRRRRR
   leafletOutput("skillMap", width = "100%", height = "100%"),
   
   ### DEBUGGING AREA ######
-  absolutePanel(
-    style= panelStyle, top = 200, left = 50, draggable = TRUE, width = "20%",
-    textOutput("debugText")
-  ),
+  # absolutePanel(
+  #   style= panelStyle, top = 200, left = 50, draggable = TRUE, width = "20%",
+  #   textOutput("debugText")
+  # ),
   
   ## The Logo
   absolutePanel(
@@ -97,11 +98,10 @@ ui <- bootstrapPage(
     style = panelStyle, 
     top = 10, right = 10, width = "40%", draggable = FALSE,
     plotOutput("top5"),
-    div(
-      strong("Additional Field:"),
-      checkboxInput("addCol",NULL, width = 30)
+    fluidRow(
+      column(3,checkboxInput("addCol","Additional Field: ")),
+      column(8,selectInput("sixthbar", NULL, c("",unique(jobs_per_region_suggestions$DES_OCCUP_L3_NAME))))
     ),
-    selectInput("sixthbar", NULL, c("",unique(jobs_per_region_suggestions$DES_OCCUP_L3_NAME)), selected = NULL),
     #   flowLayout(
     #     actionButton("addBar","Add"),
     #     actionButton("delBar","Remove"))
@@ -120,7 +120,7 @@ server <- function(input, output, session) {
   
   output$skillMap <- renderLeaflet({
     leaflet() %>%
-      setView(lng= 55, lat = 49.480617, zoom = 4) %>%
+      setView(lng= 55, lat = 55, zoom = 4) %>%
       addProviderTiles(providers$CartoDB.Positron) %>%
       addPolygons(data=geojsonio::geojson_read(paste0(dataDir,regions$map_files[1]), what="sp"), group = regions$labels[1], label = regions$labels[1], fillColor = regions$colors[1],labelOptions = labelOptions, dashArray= pParam$dashArray, smoothFactor = pParam$smoothFactor, color=pParam$color, opacity = pParam$opacity, fillOpacity = pParam$fillOpacity, highlight = highlights) %>%
       addPolygons(data=geojsonio::geojson_read(paste0(dataDir,regions$map_files[2]), what="sp"), group = regions$labels[2], label = regions$labels[2], fillColor = regions$colors[2],labelOptions = labelOptions, dashArray= pParam$dashArray, smoothFactor = pParam$smoothFactor, color=pParam$color, opacity = pParam$opacity, fillOpacity = pParam$fillOpacity, highlight = highlights) %>%
@@ -192,7 +192,7 @@ server <- function(input, output, session) {
       theme_minimal(base_size = 18)
 
     }
-  })
+  }, height = 200)
   
   output$debugText <- renderText({
     #print(paste("Radio Button:",input$selectCountry," ### ", input$skillMap_shape_click))
